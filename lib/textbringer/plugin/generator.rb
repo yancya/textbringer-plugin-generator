@@ -22,6 +22,7 @@ module Textbringer
           create_gemfile
           create_rakefile
           create_gitignore
+          create_lib_files
           puts "Created #{gem_name}/"
         end
 
@@ -136,6 +137,61 @@ module Textbringer
 
         def license_type
           options[:license] || "wtfpl"
+        end
+
+        def create_lib_files
+          create_version_file
+          create_main_file
+          create_plugin_entry
+        end
+
+        def create_version_file
+          content = <<~RUBY
+            # frozen_string_literal: true
+
+            module Textbringer
+              module #{module_name}
+                VERSION = "0.1.0"
+              end
+            end
+          RUBY
+          File.write("#{gem_name}/lib/textbringer/#{name}/version.rb", content)
+        end
+
+        def create_main_file
+          content = <<~RUBY
+            # frozen_string_literal: true
+
+            require_relative "#{name}/version"
+
+            module Textbringer
+              # Define faces for syntax elements
+              # Face.define :#{name}_keyword, foreground: "cyan", bold: true
+
+              class #{class_name} < Mode
+                self.file_name_pattern = /\\.#{name}\\z/i
+
+                # Define your syntax highlighting here
+                # define_syntax :#{name}_keyword, /your_pattern/
+
+                def initialize(buffer)
+                  super(buffer)
+                  @buffer[:indent_tabs_mode] = false
+                  @buffer[:tab_width] = 2
+                end
+              end
+            end
+          RUBY
+          File.write("#{gem_name}/lib/textbringer/#{name}.rb", content)
+        end
+
+        def create_plugin_entry
+          content = <<~RUBY
+            # frozen_string_literal: true
+
+            require "textbringer/#{name}"
+          RUBY
+          File.write("#{gem_name}/lib/textbringer_plugin.rb", content)
         end
 
         def camelize(string)
