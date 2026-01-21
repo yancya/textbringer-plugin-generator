@@ -24,6 +24,8 @@ module Textbringer
           create_gitignore
           create_lib_files
           create_test_files
+          create_readme
+          create_license
           puts "Created #{gem_name}/"
         end
 
@@ -270,6 +272,111 @@ module Textbringer
             end
           RUBY
           File.write("#{gem_name}/test/textbringer_#{name.tr('-', '_')}_test.rb", content)
+        end
+
+        def create_readme
+          content = <<~MARKDOWN
+            # #{gem_name.split('-').map(&:capitalize).join(' ')}
+
+            A Textbringer plugin that provides #{name} mode support.
+
+            ## Installation
+
+            Install the gem by executing:
+
+            ```bash
+            gem install #{gem_name}
+            ```
+
+            Or add it to your Gemfile:
+
+            ```bash
+            bundle add #{gem_name}
+            ```
+
+            ## Usage
+
+            The plugin is automatically loaded when you start Textbringer. Simply open any `.#{name}` file and the mode will be applied automatically.
+
+            No additional configuration is required.
+
+            ## Development
+
+            After checking out the repo, run `bin/setup` to install dependencies. Then, run `rake test` to run the tests.
+
+            To install this gem onto your local machine, run `bundle exec rake install`.
+
+            ## Contributing
+
+            Bug reports and pull requests are welcome on GitHub at https://github.com/#{author}/#{gem_name}.
+
+            ## License
+
+            The gem is available as open source under the terms of the [#{license_name}](#{license_url}).
+          MARKDOWN
+          File.write("#{gem_name}/README.md", content)
+        end
+
+        def create_license
+          if license_type == "wtfpl"
+            create_wtfpl_license
+          else
+            create_mit_license
+          end
+        end
+
+        def create_wtfpl_license
+          content = <<~LICENSE
+            DO WHAT THE FUCK YOU WANT TO PUBLIC LICENSE
+            Version 2, December 2004
+
+            Copyright (C) #{Time.now.year} #{author} <#{email}>
+
+            Everyone is permitted to copy and distribute verbatim or modified
+            copies of this license document, and changing it is allowed as long
+            as the name is changed.
+
+            DO WHAT THE FUCK YOU WANT TO PUBLIC LICENSE
+            TERMS AND CONDITIONS FOR COPYING, DISTRIBUTION AND MODIFICATION
+
+            0. You just DO WHAT THE FUCK YOU WANT TO.
+          LICENSE
+          File.write("#{gem_name}/LICENSE.txt", content)
+        end
+
+        def create_mit_license
+          content = <<~LICENSE
+            The MIT License (MIT)
+
+            Copyright (c) #{Time.now.year} #{author}
+
+            Permission is hereby granted, free of charge, to any person obtaining a copy
+            of this software and associated documentation files (the "Software"), to deal
+            in the Software without restriction, including without limitation the rights
+            to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+            copies of the Software, and to permit persons to whom the Software is
+            furnished to do so, subject to the following conditions:
+
+            The above copyright notice and this permission notice shall be included in
+            all copies or substantial portions of the Software.
+
+            THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+            IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+            FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+            AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+            LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+            OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+            THE SOFTWARE.
+          LICENSE
+          File.write("#{gem_name}/LICENSE.txt", content)
+        end
+
+        def license_name
+          license_type == "wtfpl" ? "WTFPL" : "MIT License"
+        end
+
+        def license_url
+          license_type == "wtfpl" ? "http://www.wtfpl.net/" : "https://opensource.org/licenses/MIT"
         end
 
         def camelize(string)
