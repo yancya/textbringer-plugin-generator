@@ -1,0 +1,7 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require "bundler/setup"
+require "textbringer_plugin_generator"
+
+Textbringer::Plugin::Generator::CLI.start(ARGV)
