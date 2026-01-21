@@ -23,6 +23,7 @@ module Textbringer
           create_rakefile
           create_gitignore
           create_lib_files
+          create_test_files
           puts "Created #{gem_name}/"
         end
 
@@ -192,6 +193,83 @@ module Textbringer
             require "textbringer/#{name}"
           RUBY
           File.write("#{gem_name}/lib/textbringer_plugin.rb", content)
+        end
+
+        def create_test_files
+          create_test_helper
+          create_test_file
+        end
+
+        def create_test_helper
+          content = <<~RUBY
+            # frozen_string_literal: true
+
+            $LOAD_PATH.unshift File.expand_path("../lib", __dir__)
+
+            # Mock Textbringer for testing without the actual dependency
+            module Textbringer
+              class Face
+                def self.define(name, **options)
+                  # Mock Face.define
+                end
+              end
+
+              class Mode
+                attr_reader :buffer
+
+                def initialize(buffer)
+                  @buffer = buffer
+                end
+
+                def self.define_syntax(face, pattern)
+                  # Mock define_syntax
+                end
+
+                def self.file_name_pattern
+                  @file_name_pattern
+                end
+
+                def self.file_name_pattern=(pattern)
+                  @file_name_pattern = pattern
+                end
+              end
+            end
+
+            require "textbringer/#{name}"
+
+            require "test/unit"
+          RUBY
+          File.write("#{gem_name}/test/test_helper.rb", content)
+        end
+
+        def create_test_file
+          test_class = name.split(/[-_]/).map(&:capitalize).join
+          content = <<~RUBY
+            # frozen_string_literal: true
+
+            require "test_helper"
+
+            class Textbringer::#{test_class}Test < Test::Unit::TestCase
+              test "VERSION is defined" do
+                assert do
+                  ::Textbringer::#{module_name}.const_defined?(:VERSION)
+                end
+              end
+
+              test "#{class_name} class exists" do
+                assert do
+                  defined?(Textbringer::#{class_name})
+                end
+              end
+
+              test "#{class_name} file pattern matches .#{name} files" do
+                assert do
+                  Textbringer::#{class_name}.file_name_pattern =~ "test.#{name}"
+                end
+              end
+            end
+          RUBY
+          File.write("#{gem_name}/test/textbringer_#{name.tr('-', '_')}_test.rb", content)
         end
 
         def camelize(string)
