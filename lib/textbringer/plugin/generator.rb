@@ -50,15 +50,15 @@ module Textbringer
               spec.authors = [#{author.inspect}]
               spec.email = [#{email.inspect}]
 
-              spec.summary = "TODO: Write a short summary"
-              spec.description = "TODO: Write a longer description"
-              spec.homepage = "https://github.com/#{author}/#{gem_name}"
+              spec.summary = "#{module_name} mode for Textbringer"
+              spec.description = "A Textbringer plugin that provides #{name} mode support with syntax highlighting."
+              spec.homepage = "https://github.com/#{github_user}/#{gem_name}"
               spec.license = "#{license_type.upcase}"
               spec.required_ruby_version = ">= 3.2.0"
 
               spec.metadata["allowed_push_host"] = "https://rubygems.org"
               spec.metadata["homepage_uri"] = spec.homepage
-              spec.metadata["source_code_uri"] = "https://github.com/#{author}/#{gem_name}"
+              spec.metadata["source_code_uri"] = "https://github.com/#{github_user}/#{gem_name}"
 
               gemspec = File.basename(__FILE__)
               spec.files = IO.popen(%w[git ls-files -z], chdir: __dir__, err: IO::NULL) do |ls|
@@ -132,6 +132,15 @@ module Textbringer
 
         def author
           options[:author] || `git config user.name`.strip
+        end
+
+        def github_user
+          # Try to get GitHub username, fallback to sanitized author name
+          github = `git config github.user`.strip
+          return github unless github.empty?
+
+          # Remove spaces and non-alphanumeric characters for URL safety
+          author.gsub(/\s+/, '').gsub(/[^a-zA-Z0-9-]/, '')
         end
 
         def email
@@ -308,7 +317,7 @@ module Textbringer
 
             ## Contributing
 
-            Bug reports and pull requests are welcome on GitHub at https://github.com/#{author}/#{gem_name}.
+            Bug reports and pull requests are welcome on GitHub at https://github.com/#{github_user}/#{gem_name}.
 
             ## License
 
