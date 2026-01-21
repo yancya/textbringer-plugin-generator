@@ -16,7 +16,10 @@ module Textbringer
         end
 
         desc "new NAME", "Generate a new Textbringer plugin"
-        option :license, type: :string, default: "wtfpl", desc: "License (mit or wtfpl)"
+        option :license, type: :string, default: "wtfpl",
+               desc: "License (wtfpl, mit, apache-2.0, bsd-3-clause, gpl-3.0)"
+        option :test_framework, type: :string, default: "test-unit",
+               desc: "Test framework (test-unit, minitest, rspec)"
         option :author, type: :string, desc: "Author name"
         option :email, type: :string, desc: "Author email"
         def new(name)

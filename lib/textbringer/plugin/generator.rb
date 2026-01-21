@@ -34,7 +34,11 @@ module Textbringer
         def create_directory_structure
           FileUtils.mkdir_p(gem_name)
           FileUtils.mkdir_p("#{gem_name}/lib/textbringer/#{name}")
-          FileUtils.mkdir_p("#{gem_name}/test")
+          if test_framework == "rspec"
+            FileUtils.mkdir_p("#{gem_name}/spec")
+          else
+            FileUtils.mkdir_p("#{gem_name}/test")
+          end
           FileUtils.mkdir_p("#{gem_name}/.github/workflows")
         end
 
@@ -78,6 +82,15 @@ module Textbringer
         end
 
         def create_gemfile
+          test_gem = case test_framework
+                     when "rspec"
+                       'gem "rspec", "~> 3.0"'
+                     when "minitest"
+                       'gem "minitest", "~> 5.0"'
+                     else
+                       'gem "test-unit"'
+                     end
+
           content = <<~RUBY
             # frozen_string_literal: true
 
@@ -87,26 +100,56 @@ module Textbringer
 
             gem "irb"
             gem "rake", "~> 13.0"
-            gem "test-unit"
+            #{test_gem}
           RUBY
           File.write("#{gem_name}/Gemfile", content)
         end
 
         def create_rakefile
-          content = <<~RUBY
-            # frozen_string_literal: true
+          content = case test_framework
+                    when "rspec"
+                      <<~RUBY
+                        # frozen_string_literal: true
 
-            require "bundler/gem_tasks"
-            require "rake/testtask"
+                        require "bundler/gem_tasks"
+                        require "rspec/core/rake_task"
 
-            Rake::TestTask.new(:test) do |t|
-              t.libs << "test"
-              t.libs << "lib"
-              t.test_files = FileList["test/**/*_test.rb"]
-            end
+                        RSpec::Core::RakeTask.new(:spec)
 
-            task default: :test
-          RUBY
+                        task default: :spec
+                      RUBY
+                    when "minitest"
+                      <<~RUBY
+                        # frozen_string_literal: true
+
+                        require "bundler/gem_tasks"
+                        require "rake/testtask"
+
+                        Rake::TestTask.new(:test) do |t|
+                          t.libs << "test"
+                          t.libs << "lib"
+                          t.test_files = FileList["test/**/*_test.rb"]
+                        end
+
+                        task default: :test
+                      RUBY
+                    else
+                      <<~RUBY
+                        # frozen_string_literal: true
+
+                        require "bundler/gem_tasks"
+                        require "rake/testtask"
+
+                        Rake::TestTask.new(:test) do |t|
+                          t.libs << "test"
+                          t.libs << "lib"
+                          t.test_files = FileList["test/**/*_test.rb"]
+                        end
+
+                        task default: :test
+                      RUBY
+                    end
+
           File.write("#{gem_name}/Rakefile", content)
         end
 
@@ -149,6 +192,10 @@ module Textbringer
 
         def license_type
           options[:license] || "wtfpl"
+        end
+
+        def test_framework
+          options[:test_framework] || "test-unit"
         end
 
         def create_lib_files
@@ -207,16 +254,21 @@ module Textbringer
         end
 
         def create_test_files
-          create_test_helper
-          create_test_file
+          case test_framework
+          when "rspec"
+            create_rspec_helper
+            create_rspec_file
+          when "minitest"
+            create_minitest_helper
+            create_minitest_file
+          else
+            create_test_unit_helper
+            create_test_unit_file
+          end
         end
 
-        def create_test_helper
-          content = <<~RUBY
-            # frozen_string_literal: true
-
-            $LOAD_PATH.unshift File.expand_path("../lib", __dir__)
-
+        def textbringer_mock_code
+          <<~RUBY
             # Mock Textbringer for testing without the actual dependency
             module Textbringer
               class Face
@@ -245,6 +297,93 @@ module Textbringer
                 end
               end
             end
+          RUBY
+        end
+
+        def create_rspec_helper
+          content = <<~RUBY
+            # frozen_string_literal: true
+
+            $LOAD_PATH.unshift File.expand_path("../lib", __dir__)
+
+            #{textbringer_mock_code.strip}
+
+            require "textbringer/#{name}"
+          RUBY
+          File.write("#{gem_name}/spec/spec_helper.rb", content)
+        end
+
+        def create_rspec_file
+          content = <<~RUBY
+            # frozen_string_literal: true
+
+            require "spec_helper"
+
+            RSpec.describe Textbringer::#{module_name} do
+              it "has a version number" do
+                expect(Textbringer::#{module_name}::VERSION).not_to be_nil
+              end
+            end
+
+            RSpec.describe Textbringer::#{class_name} do
+              it "exists" do
+                expect(defined?(Textbringer::#{class_name})).to be_truthy
+              end
+
+              it "matches .#{name} files" do
+                expect(Textbringer::#{class_name}.file_name_pattern).to match("test.#{name}")
+              end
+            end
+          RUBY
+          File.write("#{gem_name}/spec/textbringer_#{name.tr('-', '_')}_spec.rb", content)
+        end
+
+        def create_minitest_helper
+          content = <<~RUBY
+            # frozen_string_literal: true
+
+            $LOAD_PATH.unshift File.expand_path("../lib", __dir__)
+
+            #{textbringer_mock_code.strip}
+
+            require "textbringer/#{name}"
+
+            require "minitest/autorun"
+          RUBY
+          File.write("#{gem_name}/test/test_helper.rb", content)
+        end
+
+        def create_minitest_file
+          test_class = name.split(/[-_]/).map(&:capitalize).join
+          content = <<~RUBY
+            # frozen_string_literal: true
+
+            require "test_helper"
+
+            class Textbringer::#{test_class}Test < Minitest::Test
+              def test_version_is_defined
+                assert Textbringer::#{module_name}.const_defined?(:VERSION)
+              end
+
+              def test_#{class_name.downcase}_class_exists
+                assert defined?(Textbringer::#{class_name})
+              end
+
+              def test_file_pattern_matches_#{name.tr('-', '_')}_files
+                assert_match Textbringer::#{class_name}.file_name_pattern, "test.#{name}"
+              end
+            end
+          RUBY
+          File.write("#{gem_name}/test/textbringer_#{name.tr('-', '_')}_test.rb", content)
+        end
+
+        def create_test_unit_helper
+          content = <<~RUBY
+            # frozen_string_literal: true
+
+            $LOAD_PATH.unshift File.expand_path("../lib", __dir__)
+
+            #{textbringer_mock_code.strip}
 
             require "textbringer/#{name}"
 
@@ -253,7 +392,7 @@ module Textbringer
           File.write("#{gem_name}/test/test_helper.rb", content)
         end
 
-        def create_test_file
+        def create_test_unit_file
           test_class = name.split(/[-_]/).map(&:capitalize).join
           content = <<~RUBY
             # frozen_string_literal: true
@@ -327,8 +466,15 @@ module Textbringer
         end
 
         def create_license
-          if license_type == "wtfpl"
+          case license_type
+          when "wtfpl"
             create_wtfpl_license
+          when "apache-2.0"
+            create_apache_license
+          when "bsd-3-clause"
+            create_bsd_license
+          when "gpl-3.0"
+            create_gpl_license
           else
             create_mit_license
           end
@@ -380,12 +526,228 @@ module Textbringer
           File.write("#{gem_name}/LICENSE.txt", content)
         end
 
+        def create_apache_license
+          content = <<~LICENSE
+                                             Apache License
+                                       Version 2.0, January 2004
+                                    http://www.apache.org/licenses/
+
+            TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION
+
+            1. Definitions.
+
+               "License" shall mean the terms and conditions for use, reproduction,
+               and distribution as defined by Sections 1 through 9 of this document.
+
+               "Licensor" shall mean the copyright owner or entity authorized by
+               the copyright owner that is granting the License.
+
+               "Legal Entity" shall mean the union of the acting entity and all
+               other entities that control, are controlled by, or are under common
+               control with that entity. For the purposes of this definition,
+               "control" means (i) the power, direct or indirect, to cause the
+               direction or management of such entity, whether by contract or
+               otherwise, or (ii) ownership of fifty percent (50%) or more of the
+               outstanding shares, or (iii) beneficial ownership of such entity.
+
+               "You" (or "Your") shall mean an individual or Legal Entity
+               exercising permissions granted by this License.
+
+               "Source" form shall mean the preferred form for making modifications,
+               including but not limited to software source code, documentation
+               source, and configuration files.
+
+               "Object" form shall mean any form resulting from mechanical
+               transformation or translation of a Source form, including but
+               not limited to compiled object code, generated documentation,
+               and conversions to other media types.
+
+               "Work" shall mean the work of authorship, whether in Source or
+               Object form, made available under the License, as indicated by a
+               copyright notice that is included in or attached to the work.
+
+               "Derivative Works" shall mean any work, whether in Source or Object
+               form, that is based on (or derived from) the Work and for which the
+               editorial revisions, annotations, elaborations, or other modifications
+               represent, as a whole, an original work of authorship.
+
+               "Contribution" shall mean any work of authorship, including
+               the original version of the Work and any modifications or additions
+               to that Work or Derivative Works thereof, that is intentionally
+               submitted to the Licensor for inclusion in the Work by the copyright owner.
+
+               "Contributor" shall mean Licensor and any individual or Legal Entity
+               on behalf of whom a Contribution has been received by Licensor and
+               subsequently incorporated within the Work.
+
+            2. Grant of Copyright License. Subject to the terms and conditions of
+               this License, each Contributor hereby grants to You a perpetual,
+               worldwide, non-exclusive, no-charge, royalty-free, irrevocable
+               copyright license to reproduce, prepare Derivative Works of,
+               publicly display, publicly perform, sublicense, and distribute the
+               Work and such Derivative Works in Source or Object form.
+
+            3. Grant of Patent License. Subject to the terms and conditions of
+               this License, each Contributor hereby grants to You a perpetual,
+               worldwide, non-exclusive, no-charge, royalty-free, irrevocable
+               (except as stated in this section) patent license to make, have made,
+               use, offer to sell, sell, import, and otherwise transfer the Work.
+
+            4. Redistribution. You may reproduce and distribute copies of the
+               Work or Derivative Works thereof in any medium, with or without
+               modifications, and in Source or Object form, provided that You
+               meet the following conditions:
+
+               (a) You must give any other recipients of the Work or
+                   Derivative Works a copy of this License; and
+
+               (b) You must cause any modified files to carry prominent notices
+                   stating that You changed the files; and
+
+               (c) You must retain, in the Source form of any Derivative Works
+                   that You distribute, all copyright, patent, trademark, and
+                   attribution notices from the Source form of the Work; and
+
+               (d) If the Work includes a "NOTICE" text file as part of its
+                   distribution, then any Derivative Works that You distribute must
+                   include a readable copy of the attribution notices contained
+                   within such NOTICE file.
+
+            5. Submission of Contributions. Unless You explicitly state otherwise,
+               any Contribution intentionally submitted for inclusion in the Work
+               by You to the Licensor shall be under the terms and conditions of
+               this License, without any additional terms or conditions.
+
+            6. Trademarks. This License does not grant permission to use the trade
+               names, trademarks, service marks, or product names of the Licensor.
+
+            7. Disclaimer of Warranty. Unless required by applicable law or
+               agreed to in writing, Licensor provides the Work on an "AS IS" BASIS,
+               WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND.
+
+            8. Limitation of Liability. In no event and under no legal theory,
+               whether in tort (including negligence), contract, or otherwise,
+               shall any Contributor be liable to You for damages, including any
+               direct, indirect, special, incidental, or consequential damages.
+
+            9. Accepting Warranty or Additional Liability. While redistributing
+               the Work or Derivative Works thereof, You may choose to offer,
+               and charge a fee for, acceptance of support, warranty, indemnity,
+               or other liability obligations and/or rights consistent with this
+               License.
+
+            END OF TERMS AND CONDITIONS
+
+            Copyright #{Time.now.year} #{author}
+
+            Licensed under the Apache License, Version 2.0 (the "License");
+            you may not use this file except in compliance with the License.
+            You may obtain a copy of the License at
+
+                http://www.apache.org/licenses/LICENSE-2.0
+
+            Unless required by applicable law or agreed to in writing, software
+            distributed under the License is distributed on an "AS IS" BASIS,
+            WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+            See the License for the specific language governing permissions and
+            limitations under the License.
+          LICENSE
+          File.write("#{gem_name}/LICENSE.txt", content)
+        end
+
+        def create_bsd_license
+          content = <<~LICENSE
+            BSD 3-Clause License
+
+            Copyright (c) #{Time.now.year}, #{author}
+            All rights reserved.
+
+            Redistribution and use in source and binary forms, with or without
+            modification, are permitted provided that the following conditions are met:
+
+            1. Redistributions of source code must retain the above copyright notice, this
+               list of conditions and the following disclaimer.
+
+            2. Redistributions in binary form must reproduce the above copyright notice,
+               this list of conditions and the following disclaimer in the documentation
+               and/or other materials provided with the distribution.
+
+            3. Neither the name of the copyright holder nor the names of its
+               contributors may be used to endorse or promote products derived from
+               this software without specific prior written permission.
+
+            THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+            AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+            IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+            DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+            FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+            DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+            SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+            CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+            OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+            OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+          LICENSE
+          File.write("#{gem_name}/LICENSE.txt", content)
+        end
+
+        def create_gpl_license
+          content = <<~LICENSE
+                                GNU GENERAL PUBLIC LICENSE
+                                   Version 3, 29 June 2007
+
+            Copyright (C) 2007 Free Software Foundation, Inc. <https://fsf.org/>
+            Everyone is permitted to copy and distribute verbatim copies
+            of this license document, but changing it is not allowed.
+
+                                        Preamble
+
+            The GNU General Public License is a free, copyleft license for
+            software and other kinds of works.
+
+            The licenses for most software and other practical works are designed
+            to take away your freedom to share and change the works.  By contrast,
+            the GNU General Public License is intended to guarantee your freedom to
+            share and change all versions of a program--to make sure it remains free
+            software for all its users.
+
+            For the full license text, see <https://www.gnu.org/licenses/gpl-3.0.txt>
+
+            Copyright #{Time.now.year} #{author}
+
+            This program is free software: you can redistribute it and/or modify
+            it under the terms of the GNU General Public License as published by
+            the Free Software Foundation, either version 3 of the License, or
+            (at your option) any later version.
+
+            This program is distributed in the hope that it will be useful,
+            but WITHOUT ANY WARRANTY; without even the implied warranty of
+            MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+            GNU General Public License for more details.
+
+            You should have received a copy of the GNU General Public License
+            along with this program.  If not, see <https://www.gnu.org/licenses/>.
+          LICENSE
+          File.write("#{gem_name}/LICENSE.txt", content)
+        end
+
         def license_name
-          license_type == "wtfpl" ? "WTFPL" : "MIT License"
+          case license_type
+          when "wtfpl" then "WTFPL"
+          when "apache-2.0" then "Apache License 2.0"
+          when "bsd-3-clause" then "BSD 3-Clause License"
+          when "gpl-3.0" then "GNU GPL v3.0"
+          else "MIT License"
+          end
         end
 
         def license_url
-          license_type == "wtfpl" ? "http://www.wtfpl.net/" : "https://opensource.org/licenses/MIT"
+          case license_type
+          when "wtfpl" then "http://www.wtfpl.net/"
+          when "apache-2.0" then "https://opensource.org/licenses/Apache-2.0"
+          when "bsd-3-clause" then "https://opensource.org/licenses/BSD-3-Clause"
+          when "gpl-3.0" then "https://www.gnu.org/licenses/gpl-3.0"
+          else "https://opensource.org/licenses/MIT"
+          end
         end
 
         def camelize(string)
