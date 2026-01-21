@@ -37,7 +37,8 @@ This creates a new directory `textbringer-my-plugin` with all the necessary file
 
 ### Options
 
-- `--license=[mit|wtfpl]` - Choose license (default: wtfpl)
+- `--license=[wtfpl|mit|apache-2.0|bsd-3-clause|gpl-3.0]` - Choose license (default: wtfpl)
+- `--test_framework=[test-unit|minitest|rspec]` - Choose test framework (default: test-unit)
 - `--author=NAME` - Set author name (default: from git config)
 - `--email=EMAIL` - Set author email (default: from git config)
 
