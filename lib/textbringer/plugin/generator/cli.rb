@@ -20,11 +20,8 @@ module Textbringer
         option :author, type: :string, desc: "Author name"
         option :email, type: :string, desc: "Author email"
         def new(name)
-          puts "Generating Textbringer plugin: #{name}"
-          puts "  License: #{options[:license]}"
-          puts "  Author: #{options[:author] || 'from git config'}"
-          puts "  Email: #{options[:email] || 'from git config'}"
-          # TODO: Implement actual generation logic
+          generator = ::Textbringer::Plugin::Generator::Generator.new(name, options)
+          generator.generate
         end
       end
     end

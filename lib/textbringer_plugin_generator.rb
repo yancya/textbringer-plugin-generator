@@ -2,6 +2,7 @@
 
 require_relative "textbringer/plugin/generator/version"
 require_relative "textbringer/plugin/generator/cli"
+require_relative "textbringer/plugin/generator"
 
 module Textbringer
   module Plugin
