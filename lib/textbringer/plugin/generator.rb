@@ -271,7 +271,10 @@ module Textbringer
 
         def textbringer_mock_code
           <<~RUBY
-            # Mock Textbringer for testing without the actual dependency
+            # Mock Textbringer for testing without the actual dependency.
+            # This is a mock, not the real gem: the authoritative API reference is
+            # the shugo/textbringer source (https://github.com/shugo/textbringer).
+            # Last synced against Textbringer v26 (2026-07-10).
             module Textbringer
               class Face
                 def self.define(name, **options)
