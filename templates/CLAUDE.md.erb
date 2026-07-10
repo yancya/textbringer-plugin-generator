@@ -1,0 +1,23 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Project
+
+<%= gem_name %> is a Textbringer plugin that provides <%= name %> mode support.
+
+## Development commands
+
+```bash
+bundle install
+bundle exec rake test
+bundle exec rake build
+```
+
+## Plugin loading
+
+Textbringer loads plugins via `lib/textbringer_plugin.rb`, which requires `lib/textbringer/<%= name %>.rb` where `Textbringer::<%= class_name %>` is defined.
+
+## Textbringer reference
+
+Textbringer itself has little documentation on the web; when in doubt, read the source at https://github.com/shugo/textbringer.

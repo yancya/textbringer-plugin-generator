@@ -1,0 +1,31 @@
+# Mock Textbringer for testing without the actual dependency.
+# This is a mock, not the real gem: the authoritative API reference is
+# the shugo/textbringer source (https://github.com/shugo/textbringer).
+# Last synced against Textbringer v26 (2026-07-10).
+module Textbringer
+  class Face
+    def self.define(name, **options)
+      # Mock Face.define
+    end
+  end
+
+  class Mode
+    attr_reader :buffer
+
+    def initialize(buffer)
+      @buffer = buffer
+    end
+
+    def self.define_syntax(face, pattern)
+      # Mock define_syntax
+    end
+
+    def self.file_name_pattern
+      @file_name_pattern
+    end
+
+    def self.file_name_pattern=(pattern)
+      @file_name_pattern = pattern
+    end
+  end
+end

@@ -1,0 +1,23 @@
+# frozen_string_literal: true
+
+require "test_helper"
+
+class Textbringer::<%= test_class %>Test < Test::Unit::TestCase
+  test "VERSION is defined" do
+    assert do
+      ::Textbringer::<%= module_name %>.const_defined?(:VERSION)
+    end
+  end
+
+  test "<%= class_name %> class exists" do
+    assert do
+      defined?(Textbringer::<%= class_name %>)
+    end
+  end
+
+  test "<%= class_name %> file pattern matches .<%= name %> files" do
+    assert do
+      Textbringer::<%= class_name %>.file_name_pattern =~ "test.<%= name %>"
+    end
+  end
+end

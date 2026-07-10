@@ -1,0 +1,19 @@
+# frozen_string_literal: true
+
+require "spec_helper"
+
+RSpec.describe Textbringer::<%= module_name %> do
+  it "has a version number" do
+    expect(Textbringer::<%= module_name %>::VERSION).not_to be_nil
+  end
+end
+
+RSpec.describe Textbringer::<%= class_name %> do
+  it "exists" do
+    expect(defined?(Textbringer::<%= class_name %>)).to be_truthy
+  end
+
+  it "matches .<%= name %> files" do
+    expect(Textbringer::<%= class_name %>.file_name_pattern).to match("test.<%= name %>")
+  end
+end

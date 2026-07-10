@@ -1,0 +1,33 @@
+# frozen_string_literal: true
+
+require_relative "lib/textbringer/<%= name %>/version"
+
+Gem::Specification.new do |spec|
+  spec.name = "<%= gem_name %>"
+  spec.version = Textbringer::<%= module_name %>::VERSION
+  spec.authors = [<%= author.inspect %>]
+  spec.email = [<%= email.inspect %>]
+
+  spec.summary = "<%= module_name %> mode for Textbringer"
+  spec.description = "A Textbringer plugin that provides <%= name %> mode support with syntax highlighting."
+  spec.homepage = "https://github.com/<%= github_user %>/<%= gem_name %>"
+  spec.license = "<%= license_type.upcase %>"
+  spec.required_ruby_version = ">= 3.3.0"
+
+  spec.metadata["allowed_push_host"] = "https://rubygems.org"
+  spec.metadata["homepage_uri"] = spec.homepage
+  spec.metadata["source_code_uri"] = "https://github.com/<%= github_user %>/<%= gem_name %>"
+
+  gemspec = File.basename(__FILE__)
+  spec.files = IO.popen(%w[git ls-files -z], chdir: __dir__, err: IO::NULL) do |ls|
+    ls.readlines("\x0", chomp: true).reject do |f|
+      (f == gemspec) ||
+        f.start_with?(*%w[bin/ Gemfile .gitignore .rspec spec/ .github/])
+    end
+  end
+  spec.bindir = "exe"
+  spec.executables = spec.files.grep(%r{\Aexe/}) { |f| File.basename(f) }
+  spec.require_paths = ["lib"]
+
+  spec.add_dependency "textbringer", ">= 25"
+end

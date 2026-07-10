@@ -1,0 +1,17 @@
+# frozen_string_literal: true
+
+require "test_helper"
+
+class Textbringer::<%= test_class %>Test < Minitest::Test
+  def test_version_is_defined
+    assert Textbringer::<%= module_name %>.const_defined?(:VERSION)
+  end
+
+  def test_<%= class_name.downcase %>_class_exists
+    assert defined?(Textbringer::<%= class_name %>)
+  end
+
+  def test_file_pattern_matches_<%= name.tr('-', '_') %>_files
+    assert_match Textbringer::<%= class_name %>.file_name_pattern, "test.<%= name %>"
+  end
+end
