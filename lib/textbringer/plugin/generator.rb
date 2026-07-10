@@ -26,6 +26,8 @@ module Textbringer
           create_test_files
           create_readme
           create_license
+          create_github_workflow
+          create_claude_md
           puts "Created #{gem_name}/"
         end
 
@@ -454,6 +456,10 @@ module Textbringer
 
             To install this gem onto your local machine, run `bundle exec rake install`.
 
+            ## Releasing
+
+            Releases are published to RubyGems automatically via `.github/workflows/release.yml` using Trusted Publishing (OIDC) when a `v*` tag is pushed. Before the first release, register `#{gem_name}` as a Trusted Publisher for this GitHub repository at https://rubygems.org/gems/#{gem_name}/trusted_publishers (or via the RubyGems dashboard if the gem hasn't been created yet).
+
             ## Contributing
 
             Bug reports and pull requests are welcome on GitHub at https://github.com/#{github_user}/#{gem_name}.
@@ -478,6 +484,72 @@ module Textbringer
           else
             create_mit_license
           end
+        end
+
+        def create_github_workflow
+          content = <<~YAML
+            name: Release to RubyGems
+
+            on:
+              push:
+                tags:
+                  - 'v*'
+
+            jobs:
+              release:
+                runs-on: ubuntu-latest
+                permissions:
+                  contents: read
+                  id-token: write
+
+                steps:
+                  - uses: actions/checkout@v4
+
+                  - name: Set up Ruby
+                    uses: ruby/setup-ruby@v1
+                    with:
+                      ruby-version: '3.2'
+                      bundler-cache: true
+
+                  - name: Run tests
+                    run: bundle exec rake test
+
+                  - name: Build gem
+                    run: gem build #{gem_name}.gemspec
+
+                  - name: Publish to RubyGems
+                    uses: rubygems/release-gem@v1
+          YAML
+          File.write("#{gem_name}/.github/workflows/release.yml", content)
+        end
+
+        def create_claude_md
+          content = <<~MARKDOWN
+            # CLAUDE.md
+
+            This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+            ## Project
+
+            #{gem_name} is a Textbringer plugin that provides #{name} mode support.
+
+            ## Development commands
+
+            ```bash
+            bundle install
+            bundle exec rake test
+            bundle exec rake build
+            ```
+
+            ## Plugin loading
+
+            Textbringer loads plugins via `lib/textbringer_plugin.rb`, which requires `lib/textbringer/#{name}.rb` where `Textbringer::#{class_name}` is defined.
+
+            ## Textbringer reference
+
+            Textbringer itself has little documentation on the web; when in doubt, read the source at https://github.com/shugo/textbringer.
+          MARKDOWN
+          File.write("#{gem_name}/CLAUDE.md", content)
         end
 
         def create_wtfpl_license
