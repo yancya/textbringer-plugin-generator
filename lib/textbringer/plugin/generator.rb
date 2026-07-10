@@ -60,7 +60,7 @@ module Textbringer
               spec.description = "A Textbringer plugin that provides #{name} mode support with syntax highlighting."
               spec.homepage = "https://github.com/#{github_user}/#{gem_name}"
               spec.license = "#{license_type.upcase}"
-              spec.required_ruby_version = ">= 3.2.0"
+              spec.required_ruby_version = ">= 3.3.0"
 
               spec.metadata["allowed_push_host"] = "https://rubygems.org"
               spec.metadata["homepage_uri"] = spec.homepage
@@ -77,7 +77,7 @@ module Textbringer
               spec.executables = spec.files.grep(%r{\\Aexe/}) { |f| File.basename(f) }
               spec.require_paths = ["lib"]
 
-              spec.add_dependency "textbringer", ">= 1.0"
+              spec.add_dependency "textbringer", ">= 25"
             end
           RUBY
           File.write("#{gem_name}/#{gem_name}.gemspec", content)
