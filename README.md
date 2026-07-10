@@ -1,5 +1,7 @@
 # Textbringer Plugin Generator
 
+[![CI](https://github.com/yancya/textbringer-plugin-generator/actions/workflows/ci.yml/badge.svg)](https://github.com/yancya/textbringer-plugin-generator/actions/workflows/ci.yml)
+
 A command-line tool to generate Textbringer plugin scaffolding with proper structure, tests, GitHub Actions, and documentation.
 
 ## Features
