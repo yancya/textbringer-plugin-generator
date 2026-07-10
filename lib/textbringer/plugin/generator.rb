@@ -26,6 +26,7 @@ module Textbringer
           create_test_files
           create_readme
           create_license
+          create_ci_workflow
           create_github_workflow
           create_claude_md
           puts "Created #{gem_name}/"
@@ -487,6 +488,38 @@ module Textbringer
           else
             create_mit_license
           end
+        end
+
+        def create_ci_workflow
+          content = <<~YAML
+            name: CI
+
+            on:
+              push:
+                branches: [main]
+              pull_request:
+                branches: [main]
+
+            jobs:
+              test:
+                runs-on: ubuntu-latest
+                strategy:
+                  matrix:
+                    ruby-version: ['3.3', '3.4', '4.0']
+
+                steps:
+                  - uses: actions/checkout@v4
+
+                  - name: Set up Ruby ${{ matrix.ruby-version }}
+                    uses: ruby/setup-ruby@v1
+                    with:
+                      ruby-version: ${{ matrix.ruby-version }}
+                      bundler-cache: true
+
+                  - name: Run tests
+                    run: bundle exec rake
+          YAML
+          File.write("#{gem_name}/.github/workflows/ci.yml", content)
         end
 
         def create_github_workflow

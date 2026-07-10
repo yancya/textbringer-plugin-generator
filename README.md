@@ -10,6 +10,7 @@ Generates a complete Textbringer plugin project with:
 
 - ✅ Proper directory structure with `lib/textbringer_plugin.rb` for automatic loading
 - ✅ Test::Unit test setup with Textbringer mocks
+- ✅ GitHub Actions CI workflow (Ruby matrix on push/PR)
 - ✅ GitHub Actions workflow for automated RubyGems release via OIDC (Trusted Publishing)
 - ✅ Clean README template without TODOs
 - ✅ CLAUDE.md for future AI assistance
